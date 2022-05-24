@@ -1,0 +1,78 @@
+
+### LAMMPS submission file for catch bond system with longer tethers ###
+
+dimension	3
+boundary	p p p
+units		real
+atom_style	full
+
+variable ts equal 1
+timestep ${ts}
+neighbor 0.3 bin
+read_data    	input.data
+#read_restart selfassembly.restart
+
+# Output
+thermo          500000
+thermo_style    multi
+#dump            22 all dcd 10000 $d.dcd
+
+### Forcefield description ###
+
+special_bonds lj 0.0 1 1
+
+bond_style harmonic
+bond_coeff 1 1000 1.75
+bond_coeff 2 1000 2
+
+angle_style harmonic
+angle_coeff 1 1 180
+
+
+pair_style hybrid table linear 221 morse 7
+pair_coeff * * table pair.table A
+pair_coeff 1 1 morse 0 1 1 0.1
+pair_coeff 2 3 morse 1.25 10 2
+pair_coeff 5 6 morse 2.8 2 2
+
+### Defining groups ###
+
+group base type 1 2
+group top type 4
+group rest subtract all base top
+group adh1 type 2 3
+group loop id 10 12
+
+# Simulation stopping criteria
+
+variable y equal z[19]-z[5]
+
+fix 11 all halt 1 v_y > 20
+
+fix 32 rest nve
+
+fix 31 rest langevin 50 50 100 $s
+
+fix 44 top viscous 1000
+
+fix 55 top rigid single torque * off off off force * off off on
+
+run 50000
+
+fix  pull top smd cfor -FFF tether NULL NULL 0 0.0
+
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+run 50000000
+
+clear
+next d s
+jump catch.in
+
+
